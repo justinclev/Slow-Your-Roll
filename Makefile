@@ -1,4 +1,4 @@
-.PHONY: build test lint integration tidy cover
+.PHONY: build test lint integration tidy cover harness-server harness-load harness-compare
 
 build:
 	go build ./...
@@ -18,3 +18,12 @@ integration:
 
 tidy:
 	go mod tidy
+
+harness-server:
+	go run ./testharness/server
+
+harness-load:
+	go run ./testharness/load
+
+harness-compare:
+	go run ./testharness/compare

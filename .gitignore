@@ -5,6 +5,11 @@
 *.so
 *.dylib
 
+# Built testharness binaries dropped in repo root by go build
+/server
+/load
+/compare
+
 # Test binary
 *.test
 
