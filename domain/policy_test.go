@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/your-org/ratelimiter/domain"
+	"github.com/justinclev/slow-your-roll/domain"
 )
 
 func TestNewPolicy_Valid(t *testing.T) {

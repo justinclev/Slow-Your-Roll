@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/your-org/ratelimiter/internal/testclock"
+	"github.com/justinclev/slow-your-roll/internal/testclock"
 )
 
 var epoch = time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)

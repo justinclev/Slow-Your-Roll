@@ -8,9 +8,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
-	"github.com/your-org/ratelimiter/domain"
-	"github.com/your-org/ratelimiter/metrics"
-	"github.com/your-org/ratelimiter/store/memory"
+	"github.com/justinclev/slow-your-roll/domain"
+	"github.com/justinclev/slow-your-roll/metrics"
+	"github.com/justinclev/slow-your-roll/store/memory"
 )
 
 // stubAlgo controls Allow return values.
@@ -185,6 +185,62 @@ func TestNewCollector_NilInner_Panics(t *testing.T) {
 	}()
 	reg := prometheus.NewRegistry()
 	_, _ = metrics.NewCollector(nil, reg)
+}
+
+func TestCollector_DurationObserved(t *testing.T) {
+	algo := &stubAlgo{result: domain.Result{Allowed: true, Remaining: 3}}
+	c, reg := newCollectorAndReg(t, algo)
+	policy, _ := domain.NewPolicy(10, time.Minute, 10)
+	store := memory.New()
+	key := domain.Compose("user", "dur")
+
+	_, _ = c.Allow(context.Background(), key, policy, store, time.Now())
+
+	mfs, err := reg.Gather()
+	if err != nil {
+		t.Fatalf("gather: %v", err)
+	}
+	var found bool
+	for _, mf := range mfs {
+		if mf.GetName() == "ratelimiter_allow_duration_seconds" {
+			for _, m := range mf.GetMetric() {
+				if m.GetHistogram().GetSampleCount() == 1 {
+					found = true
+				}
+			}
+		}
+	}
+	if !found {
+		t.Error("expected allow_duration_seconds histogram to have 1 sample")
+	}
+}
+
+func TestCollector_DurationObservedOnError(t *testing.T) {
+	algo := &stubAlgo{err: errors.New("boom")}
+	c, reg := newCollectorAndReg(t, algo)
+	policy, _ := domain.NewPolicy(10, time.Minute, 10)
+	store := memory.New()
+	key := domain.Compose("user", "dur-err")
+
+	_, _ = c.Allow(context.Background(), key, policy, store, time.Now())
+
+	mfs, err := reg.Gather()
+	if err != nil {
+		t.Fatalf("gather: %v", err)
+	}
+	var found bool
+	for _, mf := range mfs {
+		if mf.GetName() == "ratelimiter_allow_duration_seconds" {
+			for _, m := range mf.GetMetric() {
+				if m.GetHistogram().GetSampleCount() == 1 {
+					found = true
+				}
+			}
+		}
+	}
+	if !found {
+		t.Error("expected allow_duration_seconds to record even on error")
+	}
 }
 
 func TestKeyPrefix_MultiSegment(t *testing.T) {

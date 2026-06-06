@@ -3,8 +3,8 @@ package limiter
 import (
 	"context"
 
-	"github.com/your-org/ratelimiter/clock"
-	"github.com/your-org/ratelimiter/domain"
+	"github.com/justinclev/slow-your-roll/clock"
+	"github.com/justinclev/slow-your-roll/domain"
 )
 
 // Limiter is the aggregate root. Callers construct one per policy.

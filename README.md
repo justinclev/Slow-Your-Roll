@@ -27,7 +27,7 @@ Production-grade rate limiting library for Go. Structured with Domain-Driven Des
 ## Installation
 
 ```bash
-go get github.com/your-org/ratelimiter
+go get github.com/justinclev/slow-your-roll
 ```
 
 Requires Go 1.22+.
@@ -45,11 +45,11 @@ import (
     "net/http"
     "time"
 
-    "github.com/your-org/ratelimiter/algorithm/tokenbucket"
-    "github.com/your-org/ratelimiter/domain"
-    "github.com/your-org/ratelimiter/limiter"
-    "github.com/your-org/ratelimiter/middleware"
-    "github.com/your-org/ratelimiter/store/memory"
+    "github.com/justinclev/slow-your-roll/algorithm/tokenbucket"
+    "github.com/justinclev/slow-your-roll/domain"
+    "github.com/justinclev/slow-your-roll/limiter"
+    "github.com/justinclev/slow-your-roll/middleware"
+    "github.com/justinclev/slow-your-roll/store/memory"
 )
 
 func main() {
@@ -86,7 +86,7 @@ func main() {
 ### Token Bucket (default)
 
 ```go
-import "github.com/your-org/ratelimiter/algorithm/tokenbucket"
+import "github.com/justinclev/slow-your-roll/algorithm/tokenbucket"
 
 l := limiter.New(policy, tokenbucket.New(), store)
 ```
@@ -94,7 +94,7 @@ l := limiter.New(policy, tokenbucket.New(), store)
 ### Fixed Window
 
 ```go
-import "github.com/your-org/ratelimiter/algorithm/fixedwindow"
+import "github.com/justinclev/slow-your-roll/algorithm/fixedwindow"
 
 l := limiter.New(policy, fixedwindow.New(), store)
 ```
@@ -102,7 +102,7 @@ l := limiter.New(policy, fixedwindow.New(), store)
 ### Sliding Window Log
 
 ```go
-import "github.com/your-org/ratelimiter/algorithm/slidingwindowlog"
+import "github.com/justinclev/slow-your-roll/algorithm/slidingwindowlog"
 
 l := limiter.New(policy, slidingwindowlog.New(), store)
 ```
@@ -110,7 +110,7 @@ l := limiter.New(policy, slidingwindowlog.New(), store)
 ### Sliding Window Counter
 
 ```go
-import "github.com/your-org/ratelimiter/algorithm/slidingwindowcounter"
+import "github.com/justinclev/slow-your-roll/algorithm/slidingwindowcounter"
 
 l := limiter.New(policy, slidingwindowcounter.New(), store)
 ```
@@ -122,7 +122,7 @@ l := limiter.New(policy, slidingwindowcounter.New(), store)
 ### In-Memory (single process)
 
 ```go
-import "github.com/your-org/ratelimiter/store/memory"
+import "github.com/justinclev/slow-your-roll/store/memory"
 
 store := memory.New()
 defer store.Close() // stops background cleanup goroutine
@@ -135,7 +135,7 @@ The memory store implements `domain.Transactional`, ensuring the full read-modif
 ```go
 import (
     goredis "github.com/redis/go-redis/v9"
-    rstore "github.com/your-org/ratelimiter/store/redis"
+    rstore "github.com/justinclev/slow-your-roll/store/redis"
 )
 
 client := goredis.NewClient(&goredis.Options{Addr: "localhost:6379"})
@@ -190,7 +190,7 @@ Optional; callers that do not import the `metrics` package pay zero cost.
 ```go
 import (
     "github.com/prometheus/client_golang/prometheus"
-    "github.com/your-org/ratelimiter/metrics"
+    "github.com/justinclev/slow-your-roll/metrics"
 )
 
 reg := prometheus.NewRegistry()

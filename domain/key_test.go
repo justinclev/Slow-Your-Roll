@@ -3,7 +3,7 @@ package domain_test
 import (
 	"testing"
 
-	"github.com/your-org/ratelimiter/domain"
+	"github.com/justinclev/slow-your-roll/domain"
 )
 
 func TestNewKey_Valid(t *testing.T) {

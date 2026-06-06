@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/your-org/ratelimiter/domain"
-	"github.com/your-org/ratelimiter/internal/testerrors"
+	"github.com/justinclev/slow-your-roll/domain"
+	"github.com/justinclev/slow-your-roll/internal/testerrors"
 )
 
 func TestGetStore_ReturnsError(t *testing.T) {

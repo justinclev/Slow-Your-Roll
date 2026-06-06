@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/your-org/ratelimiter/domain"
+	"github.com/justinclev/slow-your-roll/domain"
 )
 
 type record struct {
@@ -20,7 +20,7 @@ type record struct {
 // Intended for single-process deployments and testing.
 // Call Close when the store is no longer needed to stop background cleanup.
 type Store struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	records map[domain.Key]record
 	clock   func() time.Time
 	stopCh  chan struct{}
@@ -46,9 +46,9 @@ func (s *Store) Close() {
 }
 
 func (s *Store) Get(ctx context.Context, key domain.Key) (domain.Entry, bool, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
 	r, ok := s.records[key]
+	s.mu.RUnlock()
 	if !ok || s.clock().After(r.expiresAt) {
 		return domain.Entry{}, false, nil
 	}

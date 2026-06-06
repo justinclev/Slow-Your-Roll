@@ -6,17 +6,18 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/your-org/ratelimiter/domain"
+	"github.com/justinclev/slow-your-roll/domain"
 )
 
 // Collector wraps a domain.Algorithm and records Prometheus metrics
 // for every Allow call. It satisfies domain.Algorithm so it is
 // transparent to Limiter.
 type Collector struct {
-	inner     domain.Algorithm
-	allowed   *prometheus.CounterVec
-	denied    *prometheus.CounterVec
+	inner    domain.Algorithm
+	allowed  *prometheus.CounterVec
+	denied   *prometheus.CounterVec
 	remaining *prometheus.HistogramVec
+	duration  *prometheus.HistogramVec
 }
 
 // NewCollector constructs a Collector and registers its metrics with reg.
@@ -46,7 +47,14 @@ func NewCollector(inner domain.Algorithm, reg prometheus.Registerer) (*Collector
 		Buckets:   prometheus.LinearBuckets(0, 10, 11),
 	}, []string{"key_prefix"})
 
-	for _, c := range []prometheus.Collector{allowed, denied, remaining} {
+	duration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "ratelimiter",
+		Name:      "allow_duration_seconds",
+		Help:      "Latency of Allow calls including store I/O, in seconds.",
+		Buckets:   prometheus.DefBuckets,
+	}, []string{"key_prefix"})
+
+	for _, c := range []prometheus.Collector{allowed, denied, remaining, duration} {
 		if err := reg.Register(c); err != nil {
 			return nil, err
 		}
@@ -57,6 +65,7 @@ func NewCollector(inner domain.Algorithm, reg prometheus.Registerer) (*Collector
 		allowed:   allowed,
 		denied:    denied,
 		remaining: remaining,
+		duration:  duration,
 	}, nil
 }
 
@@ -68,11 +77,16 @@ func (c *Collector) Allow(
 	store domain.Store,
 	now time.Time,
 ) (domain.Result, error) {
+	start := time.Now()
 	result, err := c.inner.Allow(ctx, key, policy, store, now)
+	elapsed := time.Since(start)
+
+	prefix := keyPrefix(key)
+	c.duration.WithLabelValues(prefix).Observe(elapsed.Seconds())
+
 	if err != nil {
 		return result, err
 	}
-	prefix := keyPrefix(key)
 	if result.Allowed {
 		c.allowed.WithLabelValues(prefix).Inc()
 	} else {

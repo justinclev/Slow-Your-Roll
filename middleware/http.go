@@ -1,16 +1,37 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"strconv"
 
-	"github.com/your-org/ratelimiter/domain"
-	"github.com/your-org/ratelimiter/limiter"
+	"github.com/justinclev/slow-your-roll/domain"
+	"github.com/justinclev/slow-your-roll/limiter"
 )
 
 // KeyFunc extracts a rate limit key from the incoming request.
 // Common implementations: IP extraction, JWT claim, API key header.
 type KeyFunc func(r *http.Request) (domain.Key, error)
+
+// IPKeyFunc is a KeyFunc that uses the client IP from r.RemoteAddr as the key.
+// For requests behind a reverse proxy, use HeaderKeyFunc("X-Forwarded-For") or
+// HeaderKeyFunc("X-Real-IP") instead.
+func IPKeyFunc(r *http.Request) (domain.Key, error) {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	return domain.NewKey(host)
+}
+
+// HeaderKeyFunc returns a KeyFunc that reads the named HTTP header as the key.
+// Returns an error if the header is absent or empty, which causes the middleware
+// to respond with 500. Use this for API-key or tenant-ID based limiting.
+func HeaderKeyFunc(header string) KeyFunc {
+	return func(r *http.Request) (domain.Key, error) {
+		return domain.NewKey(r.Header.Get(header))
+	}
+}
 
 // OnDenied is called when the request is rejected. The default writes
 // 429 Too Many Requests with standard rate limit headers.

@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/your-org/ratelimiter/algorithm/slidingwindowlog"
-	"github.com/your-org/ratelimiter/domain"
-	"github.com/your-org/ratelimiter/internal/testerrors"
-	"github.com/your-org/ratelimiter/internal/testclock"
-	"github.com/your-org/ratelimiter/store/memory"
+	"github.com/justinclev/slow-your-roll/algorithm/slidingwindowlog"
+	"github.com/justinclev/slow-your-roll/domain"
+	"github.com/justinclev/slow-your-roll/internal/testerrors"
+	"github.com/justinclev/slow-your-roll/internal/testclock"
+	"github.com/justinclev/slow-your-roll/store/memory"
 )
 
 func TestSlidingWindowLog_AllowWithinLimit(t *testing.T) {

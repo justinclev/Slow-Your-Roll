@@ -3,13 +3,14 @@ package redis_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	goredis "github.com/redis/go-redis/v9"
-	"github.com/your-org/ratelimiter/domain"
-	rstore "github.com/your-org/ratelimiter/store/redis"
+	"github.com/justinclev/slow-your-roll/domain"
+	rstore "github.com/justinclev/slow-your-roll/store/redis"
 )
 
 func newStore(t *testing.T) (*rstore.Store, *miniredis.Miniredis) {
@@ -117,4 +118,78 @@ func TestRedisStore_Unit_SetExpiredTTLUsesOneSecond(t *testing.T) {
 	if found {
 		t.Error("expected found = false after TTL expiry")
 	}
+}
+
+func TestRedisStore_Transact_CreateOnMiss(t *testing.T) {
+	s, _ := newStore(t)
+	key := domain.Key("tx-create")
+
+	err := s.Transact(context.Background(), key, func(entry domain.Entry, found bool) (domain.Entry, error) {
+		if found {
+			t.Error("expected found = false on first Transact")
+		}
+		return domain.Entry{Data: []byte("v1"), ExpiresAt: time.Now().Add(time.Minute)}, nil
+	})
+	if err != nil {
+		t.Fatalf("Transact error: %v", err)
+	}
+
+	got, ok, _ := s.Get(context.Background(), key)
+	if !ok {
+		t.Fatal("expected entry after Transact")
+	}
+	if string(got.Data) != "v1" {
+		t.Errorf("Data = %q, want %q", got.Data, "v1")
+	}
+}
+
+func TestRedisStore_Transact_UpdateOnHit(t *testing.T) {
+	s, _ := newStore(t)
+	key := domain.Key("tx-update")
+
+	_ = s.Set(context.Background(), key, domain.Entry{Data: []byte("v1"), ExpiresAt: time.Now().Add(time.Minute)})
+
+	err := s.Transact(context.Background(), key, func(entry domain.Entry, found bool) (domain.Entry, error) {
+		if !found {
+			t.Error("expected found = true on second Transact")
+		}
+		if string(entry.Data) != "v1" {
+			t.Errorf("entry.Data = %q, want %q", entry.Data, "v1")
+		}
+		return domain.Entry{Data: []byte("v2"), ExpiresAt: time.Now().Add(time.Minute)}, nil
+	})
+	if err != nil {
+		t.Fatalf("Transact error: %v", err)
+	}
+
+	got, _, _ := s.Get(context.Background(), key)
+	if string(got.Data) != "v2" {
+		t.Errorf("Data = %q, want %q", got.Data, "v2")
+	}
+}
+
+func TestRedisStore_Transact_FnErrorAbortsWrite(t *testing.T) {
+	s, _ := newStore(t)
+	key := domain.Key("tx-fn-err")
+	_ = s.Set(context.Background(), key, domain.Entry{Data: []byte("original"), ExpiresAt: time.Now().Add(time.Minute)})
+
+	fnErr := errors.New("fn failure")
+	err := s.Transact(context.Background(), key, func(entry domain.Entry, found bool) (domain.Entry, error) {
+		return domain.Entry{}, fnErr
+	})
+	if !errors.Is(err, fnErr) {
+		t.Errorf("error = %v, want %v", err, fnErr)
+	}
+
+	got, _, _ := s.Get(context.Background(), key)
+	if string(got.Data) != "original" {
+		t.Error("store must not be mutated when fn returns error")
+	}
+}
+
+func TestRedisStore_ImplementsTransactional(t *testing.T) {
+	s, _ := newStore(t)
+	var _ interface {
+		Transact(context.Context, domain.Key, func(domain.Entry, bool) (domain.Entry, error)) error
+	} = s
 }

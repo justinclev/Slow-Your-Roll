@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/your-org/ratelimiter/clock"
+	"github.com/justinclev/slow-your-roll/clock"
 )
 
 func TestReal_Now(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/your-org/ratelimiter/domain"
+	"github.com/justinclev/slow-your-roll/domain"
 )
 
 // state holds Unix-nanosecond timestamps of requests within the current window.

@@ -281,8 +281,8 @@ import (
     "context"
     "time"
 
-    "github.com/your-org/ratelimiter/clock"
-    "github.com/your-org/ratelimiter/domain"
+    "github.com/justinclev/slow-your-roll/clock"
+    "github.com/justinclev/slow-your-roll/domain"
 )
 
 // Limiter is the aggregate root. Callers construct one per policy.
@@ -356,7 +356,7 @@ import (
     "math"
     "time"
 
-    "github.com/your-org/ratelimiter/domain"
+    "github.com/justinclev/slow-your-roll/domain"
 )
 
 type state struct {
@@ -442,7 +442,7 @@ import (
     "sync"
     "time"
 
-    "github.com/your-org/ratelimiter/domain"
+    "github.com/justinclev/slow-your-roll/domain"
 )
 
 type record struct {
@@ -563,8 +563,8 @@ package middleware
 import (
     "net/http"
 
-    "github.com/your-org/ratelimiter/domain"
-    "github.com/your-org/ratelimiter/limiter"
+    "github.com/justinclev/slow-your-roll/domain"
+    "github.com/justinclev/slow-your-roll/limiter"
 )
 
 // KeyFunc extracts a rate limit key from the incoming request.
@@ -780,7 +780,7 @@ linters-settings:
 ## 14. `go.mod`
 
 ```
-module github.com/your-org/ratelimiter
+module github.com/justinclev/slow-your-roll
 
 go 1.22
 
@@ -843,7 +843,7 @@ package metrics
 
 import (
     "github.com/prometheus/client_golang/prometheus"
-    "github.com/your-org/ratelimiter/domain"
+    "github.com/justinclev/slow-your-roll/domain"
 )
 
 // Collector wraps a domain.Algorithm and records Prometheus metrics

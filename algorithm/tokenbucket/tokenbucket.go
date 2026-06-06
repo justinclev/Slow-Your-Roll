@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/your-org/ratelimiter/domain"
+	"github.com/justinclev/slow-your-roll/domain"
 )
 
 type state struct {

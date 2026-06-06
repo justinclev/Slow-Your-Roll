@@ -9,8 +9,8 @@ import (
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
-	"github.com/your-org/ratelimiter/domain"
-	rstore "github.com/your-org/ratelimiter/store/redis"
+	"github.com/justinclev/slow-your-roll/domain"
+	rstore "github.com/justinclev/slow-your-roll/store/redis"
 )
 
 func newTestClient(t *testing.T) goredis.UniversalClient {

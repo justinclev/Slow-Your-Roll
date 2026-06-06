@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/your-org/ratelimiter/domain"
-	"github.com/your-org/ratelimiter/limiter"
-	"github.com/your-org/ratelimiter/middleware"
-	"github.com/your-org/ratelimiter/store/memory"
+	"github.com/justinclev/slow-your-roll/domain"
+	"github.com/justinclev/slow-your-roll/limiter"
+	"github.com/justinclev/slow-your-roll/middleware"
+	"github.com/justinclev/slow-your-roll/store/memory"
 )
 
 // errAlgorithm always returns an error from Allow.
@@ -156,6 +156,56 @@ func TestMiddleware_RetryAfterIsIntegerSeconds(t *testing.T) {
 		if ch < '0' || ch > '9' {
 			t.Errorf("Retry-After %q contains non-digit character %q", v, string(ch))
 		}
+	}
+}
+
+func TestIPKeyFunc_ExtractsIP(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+
+	key, err := middleware.IPKeyFunc(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(key) != "192.168.1.1" {
+		t.Errorf("key = %q, want %q", key, "192.168.1.1")
+	}
+}
+
+func TestIPKeyFunc_FallbackNonHostPort(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "unix-socket"
+
+	key, err := middleware.IPKeyFunc(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(key) == "" {
+		t.Error("expected non-empty key for non-host:port RemoteAddr")
+	}
+}
+
+func TestHeaderKeyFunc_PresentHeader(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-API-Key", "key-abc")
+
+	fn := middleware.HeaderKeyFunc("X-API-Key")
+	key, err := fn(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(key) != "key-abc" {
+		t.Errorf("key = %q, want %q", key, "key-abc")
+	}
+}
+
+func TestHeaderKeyFunc_MissingHeader_ReturnsError(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	fn := middleware.HeaderKeyFunc("X-API-Key")
+	_, err := fn(req)
+	if err == nil {
+		t.Error("expected error for missing header, got nil")
 	}
 }
 

@@ -1,0 +1,27 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+      - name: error-return
+      - name: error-naming
+  goimports:
+    local-prefixes: github.com/justinclev/slow-your-roll
+
+issues:
+  exclude-rules:
+    # Test files: allow unused parameters and unexported test helpers.
+    - path: _test\.go
+      linters:
+        - unused
+        - revive

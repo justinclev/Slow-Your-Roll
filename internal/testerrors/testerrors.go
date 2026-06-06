@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/your-org/ratelimiter/domain"
+	"github.com/justinclev/slow-your-roll/domain"
 )
 
 // ErrGet is returned by GetStore on Get.

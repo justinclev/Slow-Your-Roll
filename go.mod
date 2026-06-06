@@ -1,4 +1,4 @@
-module github.com/your-org/ratelimiter
+module github.com/justinclev/slow-your-roll
 
 go 1.22
 
