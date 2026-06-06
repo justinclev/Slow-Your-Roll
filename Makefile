@@ -4,7 +4,7 @@ build:
 	go build ./...
 
 test:
-	go test -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
+	go test -race -count=1 -coverprofile=coverage.out -covermode=atomic $$(go list ./... | grep -v '/testharness')
 	@go tool cover -func=coverage.out | grep total
 
 cover: test

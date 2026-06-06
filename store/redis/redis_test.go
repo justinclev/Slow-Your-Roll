@@ -193,3 +193,26 @@ func TestRedisStore_ImplementsTransactional(t *testing.T) {
 		Transact(context.Context, domain.Key, func(domain.Entry, bool) (domain.Entry, error)) error
 	} = s
 }
+
+func TestRedisStore_Unit_GetCorruptJSON(t *testing.T) {
+	s, mr := newStore(t)
+	mr.Set("rl:corrupt-key", "not-valid-json")
+
+	_, _, err := s.Get(context.Background(), domain.Key("corrupt-key"))
+	if err == nil {
+		t.Error("expected error for corrupt JSON, got nil")
+	}
+}
+
+func TestRedisStore_Transact_CorruptJSON(t *testing.T) {
+	s, mr := newStore(t)
+	mr.Set("rl:corrupt-tx", "not-valid-json")
+
+	err := s.Transact(context.Background(), domain.Key("corrupt-tx"), func(entry domain.Entry, found bool) (domain.Entry, error) {
+		t.Error("fn must not be called when JSON is corrupt")
+		return domain.Entry{}, nil
+	})
+	if err == nil {
+		t.Error("expected error for corrupt JSON in Transact, got nil")
+	}
+}

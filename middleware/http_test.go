@@ -209,6 +209,53 @@ func TestHeaderKeyFunc_MissingHeader_ReturnsError(t *testing.T) {
 	}
 }
 
+func TestMiddleware_NonZeroResetAt_SetsResetHeader(t *testing.T) {
+	// Verify the X-RateLimit-Reset header is written when ResetAt is non-zero.
+	resetTime := time.Unix(1700000000, 0)
+	algo := &nonZeroResetAlgo{resetAt: resetTime}
+	l := newLimiter(algo)
+	h := middleware.Handler(l, makeKey)(okHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	v := rr.Header().Get("X-RateLimit-Reset")
+	if v == "" {
+		t.Error("expected X-RateLimit-Reset header when ResetAt is non-zero")
+	}
+}
+
+// nonZeroResetAlgo returns an allowed result with a specific ResetAt.
+type nonZeroResetAlgo struct{ resetAt time.Time }
+
+func (a *nonZeroResetAlgo) Allow(_ context.Context, _ domain.Key, _ domain.Policy, _ domain.Store, _ time.Time) (domain.Result, error) {
+	return domain.Result{Allowed: true, Remaining: 9, ResetAt: a.resetAt}, nil
+}
+
+func TestMiddleware_SubSecondRetryAfter_RoundsUpToOne(t *testing.T) {
+	// RetryAfter < 1s but > 0 must be rounded up to 1 per RFC 7231.
+	algo := &subSecondDenyAlgo{}
+	l := newLimiter(algo)
+	h := middleware.Handler(l, makeKey)(okHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	v := rr.Header().Get("Retry-After")
+	if v != "1" {
+		t.Errorf("Retry-After = %q, want %q (sub-second must round up to 1)", v, "1")
+	}
+}
+
+// subSecondDenyAlgo denies with RetryAfter of 500ms.
+type subSecondDenyAlgo struct{}
+
+func (a *subSecondDenyAlgo) Allow(_ context.Context, _ domain.Key, _ domain.Policy, _ domain.Store, _ time.Time) (domain.Result, error) {
+	return domain.Result{Allowed: false, RetryAfter: 500 * time.Millisecond}, nil
+}
+
 func TestMiddleware_CustomOnDenied(t *testing.T) {
 	l := newLimiter(&denyAlgorithm{})
 	customCalled := false

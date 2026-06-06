@@ -151,3 +151,29 @@ func TestTokenBucket_RemainingNeverNegative(t *testing.T) {
 		}
 	}
 }
+
+func TestTokenBucket_ClockSkewGuard(t *testing.T) {
+	// If now < lastRefill (clock went backwards), elapsed is clamped to 0.
+	// No panic, no negative tokens; result must be valid.
+	clk := testclock.New(time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC))
+	store := memory.New()
+	store.WithClock(clk.Now)
+	algo := tokenbucket.New()
+	policy, _ := domain.NewPolicy(5, time.Minute, 5)
+	key := domain.Key("skew-test")
+
+	// First call at T=12:00.
+	if _, err := algo.Allow(context.Background(), key, policy, store, clk.Now()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Second call with now set 10s in the past (simulates clock skew).
+	past := clk.Now().Add(-10 * time.Second)
+	result, err := algo.Allow(context.Background(), key, policy, store, past)
+	if err != nil {
+		t.Fatalf("unexpected error on clock skew: %v", err)
+	}
+	if result.Remaining < 0 {
+		t.Errorf("Remaining = %d after clock skew, want >= 0", result.Remaining)
+	}
+}

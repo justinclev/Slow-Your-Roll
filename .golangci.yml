@@ -25,3 +25,10 @@ issues:
       linters:
         - unused
         - revive
+    # Testharness is demo code, not library code — skip all checks.
+    - path: testharness/
+      linters:
+        - errcheck
+        - unused
+        - revive
+        - staticcheck
